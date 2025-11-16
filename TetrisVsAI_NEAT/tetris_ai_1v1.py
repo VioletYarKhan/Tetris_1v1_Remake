@@ -24,7 +24,7 @@ PREVIEW_HEIGHT = 4
 SIDE_WIDTH = 150
 SCREEN_WIDTH = int(2.5 * (BOARD_WIDTH * (CELL_SIZE + MARGIN) + SIDE_WIDTH))
 SCREEN_HEIGHT = BOARD_HEIGHT * (CELL_SIZE + MARGIN)
-AI_MOVES_PER_SECOND = 0.5
+AI_MOVES_PER_SECOND = 60
 FPS = 60
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -64,7 +64,6 @@ class SevenBag:
 
 class Board:
     def __init__(self):
-        self.empty = [[0 for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
         self.grid = [[0 for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
     def check_collision(self, shape, row, col):
         shape_h, shape_w = len(shape), len(shape[0])
@@ -129,11 +128,6 @@ class Player:
         self.back_to_back = False
         self.combo = 0
         self.game_over = False
-        self.das_dir = 0
-        self.das_timer = 0
-        self.arr_timer = 0
-        self.DAS_DELAY = 10
-        self.ARR_RATE = 2
     def new_piece(self):
         piece_type = self.bag.next()
         shape = copy.deepcopy(TETROMINOES[piece_type][0])
@@ -190,13 +184,12 @@ class Player:
         self.col=BOARD_WIDTH//2 - len(self.current_piece[0])//2
         self.can_hold=True
         return garbage
-    
     def calculate_garbage(self,lines):
         g=0
         if lines==0:
             self.combo=0
         elif lines==1:
-            self.combo += 0.5
+            self.combo += 1
             self.back_to_back=False
         elif lines==2:
             g+=1
@@ -213,9 +206,7 @@ class Player:
             self.back_to_back=True
             self.combo+=1
         if self.combo>1:
-            g+=(self.combo//2)
-        if (self.board.grid == self.board.empty):
-            g += 10
+            g+=self.combo
         return g
     def apply_garbage(self):
         if self.garbage_queue>0:
@@ -448,33 +439,6 @@ def load_ai_network(genome_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\Tetri
         print("Failed to load AI network:", e)
         return None, None
 
-def handle_das(player, left_key, right_key, keys, prev_keys):
-    if keys[left_key] and not keys[right_key]:
-        dir_pressed = -1
-    elif keys[right_key] and not keys[left_key]:
-        dir_pressed = 1
-    else:
-        dir_pressed = 0
-
-    if dir_pressed != 0:
-        if dir_pressed != player.das_dir:
-            player.das_dir = dir_pressed
-            player.das_timer = player.DAS_DELAY
-            player.arr_timer = 0
-            player.move(dir_pressed)
-        else:
-            if player.das_timer > 0:
-                player.das_timer -= 1
-            else:
-                player.arr_timer -= 1
-                if player.arr_timer <= 0:
-                    player.move(dir_pressed)
-                    player.arr_timer = player.ARR_RATE
-    else:
-        player.das_dir = 0
-        player.das_timer = 0
-        player.arr_timer = 0
-
 def draw_winner(text):
     font = pygame.font.Font(None, 80)
     surf = font.render(text, True, (255, 255, 255))
@@ -482,6 +446,7 @@ def draw_winner(text):
     pygame.draw.rect(screen, (0, 0, 0), rect.inflate(40, 20))
     screen.blit(surf, rect)
     pygame.display.flip()
+
 def main():
     clock = pygame.time.Clock()
 
@@ -490,7 +455,7 @@ def main():
     game = 0
 
     while game < 5:
-        player1 = Player(90)
+        player1 = AIPlayer(90, net=net)
         player2 = AIPlayer(450, net=net)  # AI on the right
 
         running = True
@@ -499,32 +464,25 @@ def main():
         last_garbage_nonzero = 0
         garbage_zerochanged = False
 
-        prev_keys = pygame.key.get_pressed()
-
         while running:
             screen.fill(BLACK)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
-            keys = pygame.key.get_pressed()
-
-            # Player 1 (human)
+            # Player 1 (AI)
             if not player1.game_over:
                 garbage = 0
-                handle_das(player1, pygame.K_LEFT, pygame.K_RIGHT, keys, prev_keys)
-                if keys[pygame.K_UP] and not prev_keys[pygame.K_UP]: player1.rotate()
-                if keys[pygame.K_DOWN] and move%3 == 0: garbage += int(player1.soft_drop())
-                if keys[pygame.K_SLASH] and not prev_keys[pygame.K_SLASH]: player1.hold()
-                if keys[pygame.K_RSHIFT] and not prev_keys[pygame.K_RSHIFT]: garbage += int(player1.hard_drop())
+                if move % (FPS/AI_MOVES_PER_SECOND) == 0:
+                    garbage += player1.ai_take_action_and_drop()
+                else:
+                    if (move%30 == 0):
+                        shape, color, _ = player1.current_piece
+                        if not player1.board.check_collision(shape, player2.row+1, player2.col):
+                            player1.row += 1
+                        else:
+                            garbage += player1.lock_piece()
 
-                # gravity
-                if (move%30 == 0):
-                    shape, color, _ = player1.current_piece
-                    if not player1.board.check_collision(shape, player1.row+1, player1.col):
-                        player1.row += 1
-                    else:
-                        garbage += player1.lock_piece()
                 player2.garbage_queue += garbage
                 if (garbage > 0):
                     last_garbage_change = move
@@ -538,14 +496,14 @@ def main():
             if not player2.game_over:
                 garbage = 0
                 if move % (FPS/AI_MOVES_PER_SECOND) == 0:
-                    garbage += int(player2.ai_take_action_and_drop())
+                    garbage += player2.ai_take_action_and_drop()
                 else:
                     if (move%30 == 0):
                         shape, color, _ = player2.current_piece
                         if not player2.board.check_collision(shape, player2.row+1, player2.col):
                             player2.row += 1
                         else:
-                            garbage += int(player2.lock_piece())
+                            garbage += player2.lock_piece()
 
                 player1.garbage_queue += garbage
                 if (garbage > 0):
@@ -583,7 +541,6 @@ def main():
             pygame.display.flip()
             clock.tick(FPS)
             move += 1
-            prev_keys = keys
 
         game += 1
     pygame.quit()
