@@ -26,7 +26,6 @@ SCREEN_WIDTH = int(2.5 * (BOARD_WIDTH * (CELL_SIZE + MARGIN) + SIDE_WIDTH))
 SCREEN_HEIGHT = BOARD_HEIGHT * (CELL_SIZE + MARGIN)
 AI_MOVES_PER_SECOND = 0.5
 FPS = 60
-
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("2-Player Tetris vs AI")
 
@@ -196,7 +195,8 @@ class Player:
         if lines==0:
             self.combo=0
         elif lines==1:
-            self.combo += 0.5
+            # self.combo += 0.5
+            self.combo += 1
             self.back_to_back=False
         elif lines==2:
             g+=1
@@ -213,10 +213,10 @@ class Player:
             self.back_to_back=True
             self.combo+=1
         if self.combo>1:
-            g+=(self.combo//2)
+            g+=self.combo#//2
         if (self.board.grid == self.board.empty):
             g += 10
-        return g
+        return int(g)
     def apply_garbage(self):
         if self.garbage_queue>0:
             self.board.add_garbage(self.garbage_queue)
@@ -431,7 +431,7 @@ def place_piece_np(board, shape, col, piece_val):
     lines_cleared = clear_lines_np(newb)
     return lines_cleared, newb
 
-def load_ai_network(genome_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\TetrisVsAI_NEAT\curr_tetris_genome copy.pkl", config_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\TetrisVsAI_NEAT\neat-config-hold.txt"):
+def load_ai_network(genome_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\TetrisVsAI_NEAT\hold_tetris_genome.pkl", config_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\TetrisVsAI_NEAT\neat-config-hold.txt"):
     if not HAVE_NEAT:
         print("neat python package not available. AI will be disabled.")
         return None, None
