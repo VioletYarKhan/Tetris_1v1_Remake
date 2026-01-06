@@ -24,8 +24,8 @@ PREVIEW_HEIGHT = 4
 SIDE_WIDTH = 150
 SCREEN_WIDTH = int(2.5 * (BOARD_WIDTH * (CELL_SIZE + MARGIN) + SIDE_WIDTH))
 SCREEN_HEIGHT = BOARD_HEIGHT * (CELL_SIZE + MARGIN)
-AI_MOVES_PER_SECOND = 30
-FPS = 60
+AI_MOVES_PER_SECOND = 120
+FPS = 120
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("AI vs AI")
@@ -588,7 +588,7 @@ def get_best_move(board_numpy, current_piece, next_piece, held_piece, hold_locke
     return best_action
 
 
-def load_ai_network(genome_path=r"C:\Users\VioletY\Desktop\TetrisAI\best_tetris_ai.pkl", config_path=r"C:\Users\VioletY\Desktop\Tetris_1v1_Remake\TetrisVsAI_NEAT\neat-config-pvp.txt"):
+def load_ai_network(genome_path=os.path.join(os.path.dirname(__file__), "best_tetris_ai.pkl"), config_path=os.path.join(os.path.dirname(__file__), "neat-config.txt")):
     if not HAVE_NEAT:
         print("neat python package not available. AI will be disabled.")
         return None, None
