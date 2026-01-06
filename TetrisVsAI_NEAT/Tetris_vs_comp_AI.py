@@ -9,6 +9,7 @@ import numpy as np
 import math
 import pickle
 import neat
+import os
 
 pygame.init()
 
@@ -450,7 +451,7 @@ def place_piece_np(board, shape, col, piece_val):
     lines_cleared = clear_lines_np(newb)
     return lines_cleared, newb
 
-def load_ai_network(genome_path=r"C:\Users\VioletY\Desktop\TetrisAI\curr_tetris_genome.pkl", config_path=r"C:\Users\VioletY\Desktop\Tetris_1v1_Remake\TetrisVsAI_NEAT\neat-config-pvp.txt"):
+def load_ai_network(genome_path=os.path.join(os.path.dirname(__file__), "best_tetris_ai.pkl"), config_path=os.path.join(os.path.dirname(__file__), "neat-config.txt")):
     try:
         with open(genome_path, "rb") as f:
             genome = pickle.load(f)

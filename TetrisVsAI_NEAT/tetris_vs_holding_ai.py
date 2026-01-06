@@ -431,10 +431,7 @@ def place_piece_np(board, shape, col, piece_val):
     lines_cleared = clear_lines_np(newb)
     return lines_cleared, newb
 
-def load_ai_network(genome_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\TetrisVsAI_NEAT\hold_tetris_genome.pkl", config_path=r"C:\Users\VioletY\Desktop\MakeCode Arcade\TetrisVsAI_NEAT\neat-config-hold.txt"):
-    if not HAVE_NEAT:
-        print("neat python package not available. AI will be disabled.")
-        return None, None
+def load_ai_network(genome_path=os.path.join(os.path.dirname(__file__), "best_tetris_ai.pkl"), config_path=os.path.join(os.path.dirname(__file__), "neat-config.txt")):
     try:
         with open(genome_path, "rb") as f:
             genome = pickle.load(f)
